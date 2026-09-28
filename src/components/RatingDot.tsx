@@ -12,19 +12,20 @@
  */
 export type RatingTier = 'bad' | 'poor' | 'ok' | 'good' | 'none'
 
+/** 1 is easy, 10 is as bad as it gets — so low numbers are the green end. */
 export function ratingTier(rating: number | null): RatingTier {
   if (rating === null) return 'none'
-  if (rating <= 3) return 'bad'
-  if (rating <= 5) return 'poor'
-  if (rating <= 7) return 'ok'
-  return 'good'
+  if (rating <= 3) return 'good'
+  if (rating <= 5) return 'ok'
+  if (rating <= 7) return 'poor'
+  return 'bad'
 }
 
 export const TIER_LABEL: Record<RatingTier, string> = {
-  bad: 'Bad',
+  bad: 'Awful',
   poor: 'Rough',
-  ok: 'Okay',
-  good: 'Good',
+  ok: 'Average',
+  good: 'Easy',
   none: 'Not rated',
 }
 
@@ -40,7 +41,9 @@ export function RatingDot({
     <span
       className={`rating-dot rating-dot--${size}`}
       data-tier={tier}
-      aria-label={rating === null ? 'Not rated' : `Rated ${rating} out of 10, ${TIER_LABEL[tier].toLowerCase()}`}
+      aria-label={
+        rating === null ? 'Not rated' : `Rated ${rating} out of 10 for badness, ${TIER_LABEL[tier].toLowerCase()}`
+      }
     >
       {rating ?? '·'}
     </span>
@@ -50,10 +53,10 @@ export function RatingDot({
 /** The legend that has to accompany the scale wherever it is scanned in bulk. */
 export function RatingLegend() {
   const tiers: { tier: RatingTier; label: string }[] = [
-    { tier: 'bad', label: '1–3 bad' },
-    { tier: 'poor', label: '4–5 rough' },
-    { tier: 'ok', label: '6–7 okay' },
-    { tier: 'good', label: '8–10 good' },
+    { tier: 'good', label: '1–3 easy' },
+    { tier: 'ok', label: '4–5 average' },
+    { tier: 'poor', label: '6–7 rough' },
+    { tier: 'bad', label: '8–10 awful' },
   ]
   return (
     <ul className="viz__legend">

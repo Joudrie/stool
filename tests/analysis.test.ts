@@ -31,13 +31,20 @@ function food(
 }
 
 describe('deriveRating', () => {
-  it('scores the reference form as healthy', () => {
-    expect(deriveRating({ bristol: 4, pain: 1, urgency: 2, flags: [], color: 'brown' })).toBe(10)
+  // The scale is badness: 1 is easy, 10 is as bad as it gets.
+  it('scores the reference form as the easy end', () => {
+    expect(deriveRating({ bristol: 4, pain: 1, urgency: 2, flags: [], color: 'brown' })).toBe(1)
   })
 
-  it('scores a severe liquid event near the bottom', () => {
+  it('scores a severe liquid event near the top', () => {
     const r = deriveRating({ bristol: 7, pain: 9, urgency: 9, flags: ['undigested'], color: 'yellow' })!
-    expect(r).toBeLessThanOrEqual(2)
+    expect(r).toBeGreaterThanOrEqual(9)
+  })
+
+  it('puts a middling event in the middle', () => {
+    const r = deriveRating({ bristol: 6, pain: 4, urgency: 5, flags: [], color: 'brown' })!
+    expect(r).toBeGreaterThan(3)
+    expect(r).toBeLessThan(8)
   })
 
   it('returns null when nothing clinical was recorded', () => {
@@ -45,8 +52,10 @@ describe('deriveRating', () => {
   })
 
   it('lets an explicit user rating override the derived one', () => {
-    expect(isPoorEvent(stool(NOW, { bristol: 4, rating: 2 }))).toBe(true)
-    expect(isPoorEvent(stool(NOW, { bristol: 7, pain: 9, rating: 9 }))).toBe(false)
+    // A calm-looking entry the user called awful counts as poor.
+    expect(isPoorEvent(stool(NOW, { bristol: 4, rating: 9 }))).toBe(true)
+    // A nasty-looking entry the user shrugged off does not.
+    expect(isPoorEvent(stool(NOW, { bristol: 7, pain: 9, rating: 2 }))).toBe(false)
   })
 })
 
@@ -227,15 +236,15 @@ describe('headline', () => {
 })
 
 describe('rating tiers', () => {
-  it('maps ratings onto the four reserved steps', () => {
-    expect(ratingTier(1)).toBe('bad')
-    expect(ratingTier(3)).toBe('bad')
-    expect(ratingTier(4)).toBe('poor')
-    expect(ratingTier(5)).toBe('poor')
-    expect(ratingTier(6)).toBe('ok')
-    expect(ratingTier(7)).toBe('ok')
-    expect(ratingTier(8)).toBe('good')
-    expect(ratingTier(10)).toBe('good')
+  it('puts the low numbers at the green end', () => {
+    expect(ratingTier(1)).toBe('good')
+    expect(ratingTier(3)).toBe('good')
+    expect(ratingTier(4)).toBe('ok')
+    expect(ratingTier(5)).toBe('ok')
+    expect(ratingTier(6)).toBe('poor')
+    expect(ratingTier(7)).toBe('poor')
+    expect(ratingTier(8)).toBe('bad')
+    expect(ratingTier(10)).toBe('bad')
     expect(ratingTier(null)).toBe('none')
   })
 })

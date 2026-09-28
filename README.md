@@ -50,6 +50,12 @@ sheet and then runs offline. That is the intended way to use it — see
 view history, analyse for patterns. Nothing else competes with them, and
 nothing else gets added.
 
+**The rating is badness, not goodness.** 1 is in and out with no trouble, 5 is
+about average, 10 is as bad as it gets. It runs this way because nobody can
+reliably say what a *good* one was — they blur together — while everybody can
+say how bad a bad one was. It also matches every pain scale anyone has ever
+met, so there is nothing new to learn.
+
 **Logging, in under twenty seconds.** The entry form is the whole ballgame: if
 logging an event in a bathroom takes longer than that, it stops happening and
 the record is worthless. The form is ordered by what people actually fill in —
@@ -60,9 +66,10 @@ twelve questions is a form that gets abandoned. Nothing is required: a rating
 on its own is a complete, useful entry.
 
 **History is a calendar.** Every logged day carries a coloured circle with its
-rating inside it — red through green, worst event of the day, with a count
-underneath if there was more than one. A bad fortnight is visible as a bad
-fortnight without reading anything.
+rating inside it — green at the low, easy end through red at the awful end,
+worst event of the day, with a count underneath if there was more than one. A
+bad fortnight is visible as a bad fortnight without reading anything. Tapping a
+day and logging from it back-dates the entry to that day.
 
 **Or just say it.** "Had a really bad one this morning, basically water,
 cramping like an eight" parses into Bristol type 7, pain 8/10, timed to 8 a.m.

@@ -11,8 +11,8 @@ export type Route =
   | { name: 'report' }
   | { name: 'settings' }
   | { name: 'history' }
-  | { name: 'log-stool'; id?: string }
-  | { name: 'log-food'; id?: string }
+  | { name: 'log-stool'; id?: string; date?: string }
+  | { name: 'log-food'; id?: string; date?: string }
   | { name: 'voice' }
 
 export const DEFAULT_ROUTE: Route = { name: 'today' }
@@ -22,6 +22,7 @@ export function parseHash(hash: string): Route {
   const [path, query] = clean.split('?')
   const params = new URLSearchParams(query ?? '')
   const id = params.get('id') ?? undefined
+  const date = params.get('date') ?? undefined
 
   switch (path) {
     case '':
@@ -36,9 +37,11 @@ export function parseHash(hash: string): Route {
     case 'history':
       return { name: 'history' }
     case 'log/stool':
-      return id ? { name: 'log-stool', id } : { name: 'log-stool' }
+      if (id) return { name: 'log-stool', id }
+      return date ? { name: 'log-stool', date } : { name: 'log-stool' }
     case 'log/food':
-      return id ? { name: 'log-food', id } : { name: 'log-food' }
+      if (id) return { name: 'log-food', id }
+      return date ? { name: 'log-food', date } : { name: 'log-food' }
     case 'voice':
       return { name: 'voice' }
     default:
@@ -51,9 +54,11 @@ export function href(route: Route): string {
     case 'today':
       return '#/today'
     case 'log-stool':
-      return route.id ? `#/log/stool?id=${encodeURIComponent(route.id)}` : '#/log/stool'
+      if (route.id) return `#/log/stool?id=${encodeURIComponent(route.id)}`
+      return route.date ? `#/log/stool?date=${encodeURIComponent(route.date)}` : '#/log/stool'
     case 'log-food':
-      return route.id ? `#/log/food?id=${encodeURIComponent(route.id)}` : '#/log/food'
+      if (route.id) return `#/log/food?id=${encodeURIComponent(route.id)}`
+      return route.date ? `#/log/food?date=${encodeURIComponent(route.date)}` : '#/log/food'
     default:
       return `#/${route.name}`
   }

@@ -266,12 +266,21 @@ export interface FoodEntry {
 
 export interface PhotoRecord {
   id: ID
-  /** Stored as a Blob in IndexedDB. It never leaves the device. */
-  blob: Blob
+  /**
+   * Raw bytes, not a Blob.
+   *
+   * WebKit refuses to store a Blob in IndexedDB on some iOS versions and fails
+   * with "Error preparing Blob/File data to be stored in object store", which
+   * broke photo attachment on iPhone entirely. An ArrayBuffer stores reliably
+   * everywhere, and the Blob is rebuilt on read.
+   */
+  bytes: ArrayBuffer
   mime: string
   width: number
   height: number
   createdAt: number
+  /** Older records written before the change above. Read-only. */
+  blob?: Blob
 }
 
 export type ThemePref = 'system' | 'light' | 'dark'
@@ -297,7 +306,7 @@ export const DEFAULT_SETTINGS: Settings = {
   photosEnabled: true,
   redFlagAlerts: true,
   onboarded: false,
-  schemaVersion: 2,
+  schemaVersion: 3,
 }
 
 export type AnyEntry = StoolEntry | FoodEntry

@@ -50,7 +50,7 @@ export function Report() {
   const notable = scoped.stool
     .filter((e) => {
       const r = effectiveRating(e)
-      return (r !== null && r <= 4) || e.flags.includes('blood') || (e.pain ?? 0) >= 7
+      return (r !== null && r >= 7) || e.flags.includes('blood') || (e.pain ?? 0) >= 7
     })
     .slice(0, 20)
 
@@ -111,7 +111,7 @@ export function Report() {
                     <td>{Math.round(summary.normalBandShare * 100)}%</td>
                   </tr>
                   <tr>
-                    <td>Median self-rating (10 = normal)</td>
+                    <td>Median self-rated severity (1 = easy, 10 = worst)</td>
                     <td>{summary.medianRating ?? '—'}</td>
                   </tr>
                   <tr>

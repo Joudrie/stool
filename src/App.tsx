@@ -111,9 +111,23 @@ function renderRoute(route: Route) {
       return <Voice />
     case 'log-stool':
       // `key` forces a fresh form per entry, so editing one entry after
-      // another does not carry state across.
-      return <LogStool key={route.id ?? 'new'} id={route.id} draft={takeStoolDraft()} />
+      // another does not carry state across — and so does picking a new day.
+      return (
+        <LogStool
+          key={route.id ?? route.date ?? 'new'}
+          id={route.id}
+          date={route.date}
+          draft={takeStoolDraft()}
+        />
+      )
     case 'log-food':
-      return <LogFood key={route.id ?? 'new'} id={route.id} draft={takeFoodDraft()} />
+      return (
+        <LogFood
+          key={route.id ?? route.date ?? 'new'}
+          id={route.id}
+          date={route.date}
+          draft={takeFoodDraft()}
+        />
+      )
   }
 }

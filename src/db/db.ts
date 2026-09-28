@@ -131,6 +131,35 @@ export async function getSettings(): Promise<Settings> {
 
 export const putSettings = (s: Settings) => tx(STORE.settings, 'readwrite', (st) => st.put(s))
 
+/** The stored row as written, with no defaults merged in. */
+const getStoredSettings = () =>
+  tx<Settings | undefined>(STORE.settings, 'readonly', (s) => s.get('settings'))
+
+/**
+ * The rating scale used to run 10 = healthy. It now runs 1 = easy, 10 = worst,
+ * because nobody can reliably say what a *good* one was. Anything already
+ * logged has to be turned around or every past entry silently flips meaning.
+ *
+ * Checks the stored row rather than the merged settings: a user who logged
+ * entries but never opened Settings has no stored row at all, and reading the
+ * merged defaults would make them look brand new and skip the migration.
+ */
+export async function migrateToBadnessScale(): Promise<number> {
+  const stored = await getStoredSettings()
+  if ((stored?.schemaVersion ?? 0) >= 3) return 0
+
+  const entries = await listStool()
+  let flipped = 0
+  for (const e of entries) {
+    if (e.rating === null) continue
+    await putStool({ ...e, rating: 11 - e.rating, updatedAt: Date.now() })
+    flipped++
+  }
+
+  await putSettings({ ...DEFAULT_SETTINGS, ...(stored ?? {}), schemaVersion: 3 })
+  return flipped
+}
+
 // -- whole-database operations -------------------------------------------
 
 export interface ExportBundle {
@@ -179,7 +208,9 @@ export async function exportAll(includePhotos: boolean): Promise<ExportBundle> {
         mime: rec.mime,
         width: rec.width,
         height: rec.height,
-        dataUrl: await blobToDataUrl(rec.blob),
+        dataUrl: await blobToDataUrl(
+          rec.bytes ? new Blob([rec.bytes], { type: rec.mime }) : (rec.blob as Blob),
+        ),
       })
     }
     bundle.photos = photos
@@ -219,7 +250,7 @@ export async function importAll(bundle: unknown): Promise<ImportResult> {
   for (const p of b.photos ?? []) {
     await putPhoto({
       id: p.id,
-      blob: await dataUrlToBlob(p.dataUrl),
+      bytes: await (await dataUrlToBlob(p.dataUrl)).arrayBuffer(),
       mime: p.mime,
       width: p.width,
       height: p.height,
@@ -228,6 +259,19 @@ export async function importAll(bundle: unknown): Promise<ImportResult> {
     result.photos++
   }
   return result
+}
+
+/** Removes only the sample entries, by their id prefix. */
+export async function removeSampleData(prefix: string): Promise<number> {
+  const [stool, food] = await Promise.all([listStool(), listFood()])
+  let removed = 0
+  for (const e of stool) {
+    if (e.id.startsWith(prefix)) { await deleteStool(e.id); removed++ }
+  }
+  for (const e of food) {
+    if (e.id.startsWith(prefix)) { await deleteFood(e.id); removed++ }
+  }
+  return removed
 }
 
 export async function wipeAll(): Promise<void> {

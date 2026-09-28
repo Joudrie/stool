@@ -15,7 +15,7 @@ import { useMemo, useState } from 'react'
 import { FOOD_TAGS, type FoodEntry, type FoodTag, type MealKind } from '../db/schema'
 import { COMMON_FOODS, autoTagItems, splitItems } from '../lib/foodTags'
 import { blankFood, useStore } from '../store'
-import { fromLocalInput, relativeTime, toLocalInput } from '../lib/time'
+import { fromLocalInput, relativeTime, toLocalInput, tsOnDate } from '../lib/time'
 import { goBack, navigate } from '../router'
 import { AppBar, Card, Field, Segmented, Spinner } from '../components/ui'
 import { IconClock, IconClose, IconDroplet, IconPlus, IconTrash } from '../components/icons'
@@ -26,12 +26,13 @@ const MEAL_KINDS: { id: MealKind; label: string }[] = [
   { id: 'drink', label: 'Drink' },
 ]
 
-export function LogFood({ id, draft }: { id?: string; draft?: Partial<FoodEntry> }) {
+export function LogFood({ id, date, draft }: { id?: string; date?: string; draft?: Partial<FoodEntry> }) {
   const { food, saveFood, removeFood, toast } = useStore()
   const existing = id ? food.find((e) => e.id === id) : undefined
 
+  // A day picked from the calendar decides the timestamp; otherwise it is now.
   const [entry, setEntry] = useState<FoodEntry>(() => ({
-    ...blankFood(),
+    ...blankFood(date ? tsOnDate(date) : undefined),
     ...(existing ?? {}),
     ...(draft ?? {}),
   }))

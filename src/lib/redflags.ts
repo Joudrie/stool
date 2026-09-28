@@ -142,12 +142,13 @@ export function scanLog(stool: StoolEntry[], now = Date.now()): RedFlag[] {
   }
 
   // --- recurrence ----------------------------------------------------------
-  const poor = recent.filter((e) => e.rating !== null && e.rating <= 3)
+  // 8 or above on the badness scale, i.e. the awful end.
+  const poor = recent.filter((e) => e.rating !== null && e.rating >= 8)
   if (poor.length >= 6) {
     flags.push({
       id: 'recurring',
       severity: 'discuss',
-      title: `${poor.length} events you rated 3/10 or worse in the last 30 days`,
+      title: `${poor.length} events you rated 8/10 or worse in the last 30 days`,
       detail:
         'Recurring episodes are the pattern that gets conditions like coeliac disease, inflammatory bowel disease, bile acid malabsorption and pancreatic insufficiency identified. All of them are manageable once named, and all of them are missed when episodes are treated as one-offs. This log is exactly what a gastroenterologist needs to see.',
       evidence: `${poor.length} low-rated events since ${formatDay(now - 30 * DAY)}.`,

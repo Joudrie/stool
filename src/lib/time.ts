@@ -107,3 +107,20 @@ export function isOvernight(ts: number): boolean {
   const h = new Date(ts).getHours()
   return h >= 0 && h < 5
 }
+
+/**
+ * A timestamp on `dateKey`, at the current time of day.
+ *
+ * Used when logging onto a day picked from the calendar. Keeping the clock time
+ * means a back-dated entry lands somewhere plausible and adjustable rather than
+ * at midnight, and picking today gives you now.
+ */
+export function tsOnDate(key: string, now = Date.now()): number {
+  const today = dateKey(now)
+  if (key === today) return now
+  const base = new Date(now)
+  const [y, m, d] = key.split('-').map(Number)
+  const out = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1)
+  out.setHours(base.getHours(), base.getMinutes(), 0, 0)
+  return out.getTime()
+}

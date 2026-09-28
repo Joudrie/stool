@@ -8,7 +8,8 @@
  * particular kind of photo, losing that metadata is a feature.
  */
 export interface ProcessedImage {
-  blob: Blob
+  /** Raw bytes — see PhotoRecord for why this is not a Blob. */
+  bytes: ArrayBuffer
   width: number
   height: number
   mime: string
@@ -40,7 +41,7 @@ export async function processImage(file: File): Promise<ProcessedImage> {
   )
   if (!blob) throw new Error('Could not process the image on this device.')
 
-  return { blob, width, height, mime: 'image/jpeg' }
+  return { bytes: await blob.arrayBuffer(), width, height, mime: 'image/jpeg' }
 }
 
 async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {

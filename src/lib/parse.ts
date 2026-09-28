@@ -254,6 +254,10 @@ function parseUrgency(text: string): { value: number; via: string } | null {
   return null
 }
 
+/**
+ * The rating is badness: 1 is easy, 10 is as bad as it gets. A spoken "really
+ * bad one" therefore lands high, not low.
+ */
 function parseRating(text: string): { value: number; via: string } | null {
   const explicit =
     scaleNear(text, ['rate', 'rating', 'score', 'call it']) ??
@@ -261,18 +265,18 @@ function parseRating(text: string): { value: number; via: string } | null {
   if (explicit !== null) return { value: explicit, via: `rated ${explicit}/10` }
 
   if (matchesUnnegated(text, ['worst', 'terrible', 'awful', 'horrible', 'brutal', 'miserable'])) {
-    return { value: 1, via: 'described as terrible' }
+    return { value: 10, via: 'described as terrible' }
   }
-  if (matchesUnnegated(text, ['really bad', 'very bad', 'rough', 'nasty'])) return { value: 2, via: 'described as bad' }
-  if (matchesUnnegated(text, ['bad', 'not good', 'unpleasant'])) return { value: 3, via: 'described as bad' }
+  if (matchesUnnegated(text, ['really bad', 'very bad', 'rough', 'nasty'])) return { value: 9, via: 'described as bad' }
+  if (matchesUnnegated(text, ['bad', 'not good', 'unpleasant'])) return { value: 8, via: 'described as bad' }
   if (matchesUnnegated(text, ['perfect', 'great', 'excellent', 'ideal', 'textbook'])) {
-    return { value: 10, via: 'described as healthy' }
+    return { value: 1, via: 'described as easy' }
   }
   if (matchesUnnegated(text, ['good', 'fine', 'normal', 'clean', 'easy', 'no issues', 'no problems'])) {
-    return { value: 8, via: 'described as normal' }
+    return { value: 2, via: 'described as fine' }
   }
   if (matchesUnnegated(text, ['ok', 'okay', 'alright', 'decent', 'average', 'meh'])) {
-    return { value: 6, via: 'described as okay' }
+    return { value: 5, via: 'described as average' }
   }
   return null
 }

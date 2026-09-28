@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
 import type { ThemePref } from '../db/schema'
 import { useStore } from '../store'
 import * as db from '../db/db'
-import { buildSeedEpisode } from '../lib/seed'
+import { SAMPLE_PREFIX, buildSampleData, isSampleEntry } from '../lib/seed'
 import { formatBytes } from '../lib/image'
 import { AppBar, Alert, Card, NumberField, Segmented, Spinner, SwitchRow } from '../components/ui'
 import { IconDownload, IconLock, IconTrash, IconUpload } from '../components/icons'
@@ -25,6 +25,7 @@ export function Settings() {
   const { settings, saveSettings, stool, food, reload, toast } = useStore()
   const [usage, setUsage] = useState<{ usage: number; quota: number } | null>(null)
   const [busy, setBusy] = useState(false)
+  const hasSample = stool.some((e) => isSampleEntry(e.id)) || food.some((e) => isSampleEntry(e.id))
 
   useEffect(() => {
     void db.estimateUsage().then(setUsage)
@@ -62,20 +63,27 @@ export function Settings() {
     }
   }
 
-  async function handleSeed() {
-    const ok = window.confirm(
-      'Add the 20–21 September episode?\n\nThis is reconstructed from notes written afterwards. The clock times are estimates — open each entry and correct them to what you actually remember.',
-    )
-    if (!ok) return
+  async function handleSample() {
     setBusy(true)
     try {
-      const seed = buildSeedEpisode()
-      for (const e of seed.stool) await db.putStool(e)
-      for (const e of seed.food) await db.putFood(e)
+      const sample = buildSampleData()
+      for (const e of sample.stool) await db.putStool(e)
+      for (const e of sample.food) await db.putFood(e)
       await reload()
-      toast('Episode added — check the times')
+      toast('Sample data added')
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not add the episode')
+      toast(e instanceof Error ? e.message : 'Could not add the sample')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleRemoveSample() {
+    setBusy(true)
+    try {
+      const removed = await db.removeSampleData(SAMPLE_PREFIX)
+      await reload()
+      toast(removed > 0 ? `Removed ${removed} sample entries` : 'No sample data to remove')
     } finally {
       setBusy(false)
     }
@@ -202,12 +210,29 @@ export function Settings() {
           </Card>
 
           <Card
-            title="Starter data"
-            subtitle="The 20–21 September 2026 episode, reconstructed from notes. An outlier teaches more than a baseline — but only once there is a baseline to compare it against."
+            title="Sample data"
+            subtitle="Two weeks of made-up entries so you can see what the calendar and the patterns screen look like before you have any of your own."
           >
-            <button className="btn btn--secondary btn--block" onClick={handleSeed} disabled={busy}>
-              Add that episode to the journal
-            </button>
+            <div className="stack stack--tight">
+              <button className="btn btn--secondary btn--block" onClick={handleSample} disabled={busy}>
+                {busy ? <Spinner /> : null}
+                Add sample data
+              </button>
+              {hasSample && (
+                <button
+                  className="btn btn--secondary btn--block"
+                  onClick={handleRemoveSample}
+                  disabled={busy}
+                >
+                  {busy ? <Spinner /> : null}
+                  Remove sample data
+                </button>
+              )}
+              <p className="field__hint">
+                It is clearly fake and removing it only touches the sample — your own entries are
+                never affected.
+              </p>
+            </div>
           </Card>
 
           <Card title="Danger zone">

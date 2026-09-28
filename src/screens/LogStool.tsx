@@ -22,7 +22,7 @@ import {
 import { blankStool, useStore } from '../store'
 import { deriveRating } from '../lib/analysis'
 import { flagsForEntry } from '../lib/redflags'
-import { toLocalInput, fromLocalInput, relativeTime } from '../lib/time'
+import { toLocalInput, fromLocalInput, relativeTime, tsOnDate } from '../lib/time'
 import { navigate, goBack } from '../router'
 import { AppBar, Alert, ChipGroup, Card, Field, Scale, Spinner } from '../components/ui'
 import { BristolPicker } from '../components/BristolPicker'
@@ -36,12 +36,13 @@ const PAIN_PHASES: { id: PainPhase; label: string }[] = [
   { id: 'after', label: 'After' },
 ]
 
-export function LogStool({ id, draft }: { id?: string; draft?: Partial<StoolEntry> }) {
+export function LogStool({ id, date, draft }: { id?: string; date?: string; draft?: Partial<StoolEntry> }) {
   const { stool, settings, saveStool, removeStool, addPhoto, removePhoto, toast } = useStore()
   const existing = id ? stool.find((e) => e.id === id) : undefined
 
+  // A day picked from the calendar decides the timestamp; otherwise it is now.
   const [entry, setEntry] = useState<StoolEntry>(() => ({
-    ...blankStool(),
+    ...blankStool(date ? tsOnDate(date) : undefined),
     ...(existing ?? {}),
     ...(draft ?? {}),
   }))
@@ -132,19 +133,19 @@ export function LogStool({ id, draft }: { id?: string; draft?: Partial<StoolEntr
           <Card>
             <div className="stack">
               <Scale
-                label="How was it?"
+                label="How bad was it?"
                 value={entry.rating}
                 onChange={(v) => {
                   setRatingTouched(v !== null)
                   patch({ rating: v })
                 }}
-                lowLabel="awful"
-                highLabel="perfectly normal"
+                lowLabel="easy, no trouble"
+                highLabel="as bad as it gets"
                 colourByRating
                 hint={
                   entry.rating !== null && !ratingTouched
                     ? 'Filled in from what you entered below — tap any number to change it.'
-                    : 'This is the number your calendar shows.'
+                    : '1 is in and out with no trouble. 5 is about average. This is the number your calendar shows.'
                 }
               />
               {entry.rating !== null && (

@@ -158,14 +158,14 @@ export function History() {
                   <div className="btn-row">
                     <button
                       className="btn btn--secondary"
-                      onClick={() => navigate({ name: 'log-stool' })}
+                      onClick={() => navigate({ name: 'log-stool', date: selected })}
                     >
                       <IconPlus />
                       Stool
                     </button>
                     <button
                       className="btn btn--secondary"
-                      onClick={() => navigate({ name: 'log-food' })}
+                      onClick={() => navigate({ name: 'log-food', date: selected })}
                     >
                       <IconFood />
                       Meal

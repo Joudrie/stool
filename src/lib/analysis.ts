@@ -60,42 +60,48 @@ export const THRESHOLDS = {
 // ------------------------------------------------------------- severity ---
 
 /**
- * Derives a 1–10 quality score from the clinical fields, where 10 is the
- * "healthy, quick, clean" end. Used to pre-fill the rating on the entry form
- * and to classify an event when the user did not rate it themselves.
+ * Derives a 1–10 score from the clinical fields, where 1 is easy and 10 is as
+ * bad as it gets.
+ *
+ * The scale runs this way round because nobody can reliably say what a *good*
+ * one was — they all blur together. Everyone can say how bad a bad one was,
+ * and every pain scale people have ever met already runs 1 to 10 with 10 as
+ * the worst, so there is nothing new to learn.
  */
 export function deriveRating(e: Pick<StoolEntry, 'bristol' | 'pain' | 'urgency' | 'flags' | 'color'>): number | null {
   const hasAnything =
     e.bristol !== null || e.pain !== null || e.urgency !== null || e.flags.length > 0 || e.color !== null
   if (!hasAnything) return null
 
-  let score = 10
+  let score = 1
 
   if (e.bristol !== null) {
     const penalty: Record<number, number> = { 1: 5, 2: 3, 3: 1, 4: 0, 5: 1, 6: 3, 7: 5 }
-    score -= penalty[e.bristol] ?? 0
+    score += penalty[e.bristol] ?? 0
   }
-  if (e.pain !== null) score -= (e.pain - 1) * 0.55
+  if (e.pain !== null) score += (e.pain - 1) * 0.55
   if (e.urgency !== null) {
-    if (e.urgency >= 8) score -= 2
-    else if (e.urgency >= 6) score -= 1
+    if (e.urgency >= 8) score += 2
+    else if (e.urgency >= 6) score += 1
   }
-  if (e.color === 'black' || e.color === 'red' || e.color === 'pale') score -= 3
-  else if (e.color === 'yellow' || e.color === 'green') score -= 1
+  if (e.color === 'black' || e.color === 'red' || e.color === 'pale') score += 3
+  else if (e.color === 'yellow' || e.color === 'green') score += 1
 
   const flagPenalty: Record<string, number> = {
     blood: 4, oil: 2, mucus: 1, undigested: 1, straining: 1, incomplete: 1, odor: 0.5, floating: 0.5,
   }
-  for (const f of e.flags) score -= flagPenalty[f] ?? 0
+  for (const f of e.flags) score += flagPenalty[f] ?? 0
 
   return Math.max(1, Math.min(10, Math.round(score)))
 }
 
 /** The event classifier every rate in this module is computed against. */
+export const POOR_AT = 7
+
 export function isPoorEvent(e: StoolEntry): boolean {
   const rating = e.rating ?? deriveRating(e)
   if (rating === null) return false
-  return rating <= 4
+  return rating >= POOR_AT
 }
 
 export function effectiveRating(e: StoolEntry): number | null {

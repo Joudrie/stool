@@ -12,7 +12,7 @@ describe('parseTranscript — stool', () => {
     const r = parseTranscript('I had a poop that was bad, it was basically all water', NOW)
     expect(r.intent).toBe('stool')
     expect(r.stool?.bristol).toBe(7)
-    expect(r.stool?.rating).toBe(3)
+    expect(r.stool?.rating).toBe(8)
   })
 
   it('reads pellets plus a spoken pain score', () => {
@@ -25,7 +25,7 @@ describe('parseTranscript — stool', () => {
     const r = parseTranscript('had a smooth one this morning, no pain, felt clean', NOW)
     expect(r.stool?.bristol).toBe(4)
     expect(r.stool?.pain).toBe(1)
-    expect(r.stool?.rating).toBe(8)
+    expect(r.stool?.rating).toBe(2)
     expect(hourOf(r.stool!.ts)).toBe(8)
   })
 

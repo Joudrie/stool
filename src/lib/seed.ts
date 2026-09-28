@@ -1,84 +1,115 @@
 /**
- * The 20–21 September 2026 episode, as a one-tap import.
+ * Sample data, for trying the app before you have any of your own.
  *
- * This is a reconstruction from notes written after the fact, not a live log,
- * and it is labelled as such on every record it creates. The clock times are
- * estimates — the source notes recorded the day and the sequence but not the
- * hour — which matters, because this app treats timestamps as clinical data.
- * Anyone importing this should correct the times to what they actually
- * remember before relying on the correlations it feeds.
+ * A brand-new journal is an empty calendar and a Patterns screen that says it
+ * needs more entries — which is honest but tells a first-time user nothing
+ * about what they are signing up for. This fills it with a couple of plausible
+ * weeks so every screen has something in it.
+ *
+ * Two rules. It is obviously and reversibly fake: every id carries the
+ * SAMPLE_PREFIX, so "remove sample data" is exact and can never take a real
+ * entry with it. And it is nobody's actual medical history — an earlier version
+ * shipped one real person's episode to every user, which is not something a
+ * stranger downloading a poop tracker should be handed.
  */
-import { newId, type FoodEntry, type StoolEntry } from '../db/schema'
+import { newId, type BristolType, type FoodEntry, type StoolEntry } from '../db/schema'
 import { autoTagItems } from './foodTags'
 
-const RECONSTRUCTED = 'Reconstructed from notes written on 21 Sep 2026. Clock times are estimates — correct them to what you remember.'
+export const SAMPLE_PREFIX = 'sample-'
 
-function at(year: number, month: number, day: number, hour: number, minute = 0): number {
-  return new Date(year, month - 1, day, hour, minute, 0, 0).getTime()
+const DAY = 86_400_000
+const HOUR = 3_600_000
+
+const sampleId = () => `${SAMPLE_PREFIX}${newId()}`
+
+/** Deterministic, so the sample looks the same each time it is added. */
+function makeRandom(seed: number) {
+  let s = seed
+  return () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff)
 }
 
-function food(
-  ts: number,
-  items: string[],
-  mealKind: FoodEntry['mealKind'],
-  notes: string,
-  waterOz: number | null = null,
-): FoodEntry {
-  return {
-    id: newId(),
-    kind: 'food',
-    ts,
-    items,
-    tags: autoTagItems(items),
-    mealKind,
-    waterOz,
-    notes: `${notes} ${RECONSTRUCTED}`.trim(),
-    source: 'manual',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+const MEALS: { items: string[]; hour: number }[] = [
+  { items: ['coffee', 'toast'], hour: 8 },
+  { items: ['chicken salad'], hour: 13 },
+  { items: ['pasta'], hour: 19 },
+  { items: ['ice cream'], hour: 21 },
+  { items: ['oatmeal', 'banana'], hour: 8 },
+  { items: ['sandwich'], hour: 13 },
+  { items: ['rice and chicken'], hour: 19 },
+  { items: ['cheese and crackers'], hour: 16 },
+  { items: ['eggs', 'coffee'], hour: 8 },
+  { items: ['burger', 'fries'], hour: 13 },
+  { items: ['soup'], hour: 19 },
+  { items: ['latte'], hour: 15 },
+]
+
+/**
+ * Builds 16 days of entries with a mild, honest dairy association in them, so
+ * the Patterns screen has something real to find rather than a contrived
+ * slam dunk.
+ */
+export function buildSampleData(now = Date.now()): { stool: StoolEntry[]; food: FoodEntry[] } {
+  const rnd = makeRandom(20260928)
+  const stool: StoolEntry[] = []
+  const food: FoodEntry[] = []
+
+  for (let d = 16; d >= 1; d--) {
+    const midnight = new Date(now - d * DAY)
+    midnight.setHours(0, 0, 0, 0)
+    const base = midnight.getTime()
+
+    const dairyDay = d % 3 === 0
+    const todaysMeals = dairyDay
+      ? [MEALS[0]!, MEALS[3]!, MEALS[7]!]
+      : [MEALS[4]!, MEALS[5]!, MEALS[6]!]
+
+    for (const meal of todaysMeals) {
+      const ts = base + meal.hour * HOUR + Math.floor(rnd() * 40) * 60_000
+      food.push({
+        id: sampleId(),
+        kind: 'food',
+        ts,
+        items: meal.items,
+        tags: autoTagItems(meal.items),
+        mealKind: 'meal',
+        waterOz: rnd() > 0.5 ? 16 : null,
+        notes: '',
+        source: 'manual',
+        createdAt: ts,
+        updatedAt: ts,
+      })
+    }
+
+    const count = rnd() > 0.75 ? 2 : 1
+    for (let i = 0; i < count; i++) {
+      const ts = base + (9 + i * 6) * HOUR + Math.floor(rnd() * 90) * 60_000
+      // Dairy days skew loose and uncomfortable, but not every time.
+      const rough = dairyDay && rnd() < 0.7
+      const bristol: BristolType = rough
+        ? ((rnd() < 0.4 ? 7 : 6) as BristolType)
+        : ((3 + Math.floor(rnd() * 3)) as BristolType)
+
+      stool.push({
+        id: sampleId(),
+        kind: 'stool',
+        ts,
+        bristol,
+        color: 'brown',
+        urgency: rough ? 7 + Math.floor(rnd() * 3) : 2 + Math.floor(rnd() * 2),
+        pain: rough ? 5 + Math.floor(rnd() * 3) : 1 + Math.floor(rnd() * 2),
+        painPhase: rough ? ['before'] : [],
+        rating: null,
+        flags: [],
+        photoId: null,
+        notes: '',
+        source: 'manual',
+        createdAt: ts,
+        updatedAt: ts,
+      })
+    }
   }
+
+  return { stool, food }
 }
 
-export function buildSeedEpisode(): { stool: StoolEntry[]; food: FoodEntry[] } {
-  const now = Date.now()
-
-  const foods: FoodEntry[] = [
-    food(at(2026, 9, 20, 13, 0), ['grilled hotdog', 'chili', 'rice'], 'meal', 'Cookout. Chili and rice had been held warm for a while.'),
-    food(at(2026, 9, 20, 19, 0), ['homemade apple pie', 'mini cookies'], 'snack', 'Roughly three mini cookies.'),
-    food(at(2026, 9, 20, 20, 0), ['Gatorade'], 'drink', 'Gatorade was the main fluid across the day.', 24),
-    food(at(2026, 9, 21, 8, 30), ['donut'], 'snack', 'Travel day, on the road.'),
-    food(at(2026, 9, 21, 12, 30), ['pastrami sandwich', 'coleslaw'], 'meal', 'Deli stop during the drive home.'),
-  ]
-
-  const stoolBase = {
-    kind: 'stool' as const,
-    bristol: 7 as const,
-    color: 'yellow' as const,
-    urgency: 9,
-    pain: 9,
-    painPhase: ['before' as const, 'during' as const],
-    rating: 1,
-    flags: ['undigested' as const, 'incomplete' as const],
-    photoId: null,
-    source: 'manual' as const,
-    createdAt: now,
-    updatedAt: now,
-  }
-
-  const stool: StoolEntry[] = [
-    {
-      ...stoolBase,
-      id: newId(),
-      ts: at(2026, 9, 21, 15, 0),
-      notes: `Fully liquid, no form. Yellow-brown with an olive tint and dark particulate suspended throughout. Burning hot. Spatter up the bowl walls. Felt clogged up beforehand and worried about not being able to pass gas. Abdominal pain reported as 8.5/10. ${RECONSTRUCTED}`,
-    },
-    {
-      ...stoolBase,
-      id: newId(),
-      ts: at(2026, 9, 21, 18, 0),
-      notes: `Second large episode. Same picture as the first. Completely wiped out afterwards — slept about four hours immediately after getting home. ${RECONSTRUCTED}`,
-    },
-  ]
-
-  return { stool, food: foods }
-}
+export const isSampleEntry = (id: string) => id.startsWith(SAMPLE_PREFIX)

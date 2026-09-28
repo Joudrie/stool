@@ -90,6 +90,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const reload = useCallback(async () => {
     try {
+      // Must run before anything is read, so the UI never shows old-scale
+      // ratings against the new colours.
+      await db.migrateToBadnessScale()
       const [s, f, cfg] = await Promise.all([db.listStool(), db.listFood(), db.getSettings()])
       setStool(s.sort((a, b) => b.ts - a.ts))
       setFood(f.sort((a, b) => b.ts - a.ts))
@@ -154,9 +157,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addPhoto = useCallback(async (file: File) => {
-    const { blob, width, height, mime } = await processImage(file)
+    const { bytes, width, height, mime } = await processImage(file)
     const id = newId()
-    await db.putPhoto({ id, blob, mime, width, height, createdAt: Date.now() })
+    await db.putPhoto({ id, bytes, mime, width, height, createdAt: Date.now() })
     return id
   }, [])
 
@@ -200,7 +203,10 @@ export function usePhotoUrl(photoId: string | null): string | null {
 
     void db.getPhoto(photoId).then((rec) => {
       if (!rec || revoked) return
-      created = URL.createObjectURL(rec.blob)
+      // Rebuild the Blob from bytes; fall back to the field older records used.
+      const blob = rec.bytes ? new Blob([rec.bytes], { type: rec.mime }) : rec.blob
+      if (!blob) return
+      created = URL.createObjectURL(blob)
       setUrl(created)
     })
 
